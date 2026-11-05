@@ -52,6 +52,12 @@ function Invoke-Git {
   if ($LASTEXITCODE -ne 0) { throw "git $($Args -join ' ') 失败 (exit $LASTEXITCODE)" }
 }
 
+function Git-Text {
+  param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Args)
+  $out = & $git @Args 2>$null
+  return (($out | Out-String).Trim())
+}
+
 function Get-Text([string]$path) {
   return [System.IO.File]::ReadAllText($path)
 }
@@ -61,16 +67,20 @@ function Save-Text([string]$path, [string]$text) {
 }
 
 # ---------- 基本检查 ----------
-$root = (Invoke-Git rev-parse --show-toplevel).Trim()
+# 优先以脚本所在仓库为准(tools/ 的上一级), 这样在别的仓库目录里调用也不会搞错仓库
+$root = Split-Path $PSScriptRoot -Parent
+if (-not (Test-Path (Join-Path $root 'package.json'))) {
+  $root = Git-Text rev-parse --show-toplevel
+}
 Set-Location $root
 $pkgPath = Join-Path $root 'package.json'
 $indexPath = Join-Path $root 'index.json'
 if (-not (Test-Path $pkgPath)) { throw "不是插件仓库根目录（没有 package.json）: $root" }
 
-$branch = (Invoke-Git branch --show-current).Trim()
+$branch = Git-Text branch --show-current
 if ($branch -ne 'main') { throw "请切到 main 分支再发版（当前: $branch）" }
 
-$dirty = (Invoke-Git status --porcelain).Trim()
+$dirty = Git-Text status --porcelain
 if ($dirty.Length -gt 0) { throw "工作区不干净，先提交或还原：`n$dirty" }
 
 # ---------- 版本 ----------
@@ -115,7 +125,7 @@ if ($DryRun) {
   Invoke-Git commit -m "release: $tag"
   Invoke-Git tag $tag
   if ($Token.Length -gt 0) {
-    $origin = (Invoke-Git remote get-url origin).Trim()
+    $origin = Git-Text remote get-url origin
     $pushUrl = $origin -replace '^https://', "https://x-access-token:$Token@"
     Invoke-Git push $pushUrl "main"
     Invoke-Git push $pushUrl $tag
@@ -123,7 +133,7 @@ if ($DryRun) {
     Invoke-Git push origin main
     Invoke-Git push origin $tag
   }
-  $commit = (Invoke-Git rev-parse HEAD).Trim()
+  $commit = Git-Text rev-parse HEAD
   Write-Host "已推送 $tag (commit $commit)" -ForegroundColor Green
 }
 
@@ -146,7 +156,7 @@ if (-not $SkipIndex) {
     Invoke-Git add index.json
     Invoke-Git commit -m "market: release $tag (commit $commit)"
     if ($Token.Length -gt 0) {
-      $origin = (Invoke-Git remote get-url origin).Trim()
+      $origin = Git-Text remote get-url origin
       $pushUrl = $origin -replace '^https://', "https://x-access-token:$Token@"
       Invoke-Git push $pushUrl main
     } else {
@@ -158,7 +168,7 @@ if (-not $SkipIndex) {
 
 # ---------- 4. 可选: GitHub Release ----------
 if ($Release -and $Token.Length -gt 0 -and -not $DryRun) {
-  $origin = (Invoke-Git remote get-url origin).Trim()
+  $origin = Git-Text remote get-url origin
   if ($origin -match 'github\.com[:/](?<owner>[^/]+)/(?<repo>[^/.]+?)(\.git)?$') {
     $owner = $Matches['owner']; $repo = $Matches['repo']
     $body = @{
