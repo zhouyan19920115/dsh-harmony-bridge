@@ -1,0 +1,68 @@
+{
+  "name": "dsh-harmony-bridge",
+  "version": "0.1.8",
+  "description": "让手机 App 通过 DSH 插件连上本机桥接：局域网自动发现 + 带令牌的 HTTP/WebSocket + 可选云中继，手机不用再往电脑传文件。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": [
+    "lib",
+    "bridge/src",
+    "bridge/package.json",
+    "icons",
+    "cordis.patch.yml",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-renderer",
+        "@deepseek-ai/dsh-client-ui-settings",
+        "@deepseek-ai/dsh-client-ui-slots",
+        "@deepseek-ai/dsh-client-ui-settings-plugins",
+        "@deepseek-ai/dsh-client-ui-primitives",
+        "@deepseek-ai/dsh-client-locale"
+      ],
+      "platform": "web"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "~4.0.5",
+    "@deepseek-ai/schemastery": "~3.18.5"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "harmonyos",
+    "android",
+    "phone",
+    "remote-control",
+    "bridge"
+  ],
+  "author": "zhouyan19920115",
+  "license": "MIT",
+  "homepage": "https://github.com/zhouyan19920115/dsh-harmony#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhouyan19920115/dsh-harmony.git",
+    "directory": "plugins/dsh-harmony-bridge"
+  },
+  "bugs": {
+    "url": "https://github.com/zhouyan19920115/dsh-harmony/issues"
+  },
+  "displayName": "DSH Harmony 桥接",
+  "icon": "icons/dsh-harmony-bridge-128.png"
+}
