@@ -246,6 +246,21 @@ export class PushNotifier {
         this.log('warn', `the push gateway answered HTTP ${response.status}: ${text.slice(0, 200)}`);
         return false;
       }
+      // 华为的回执是 200 + {"code":"80000000"} 才算成功; 其它 code 说明被拒绝 —— 最常见的是
+      // 80300002「No permission to send message to these tmIDs」: AGC 应用没开 Push Kit,
+      // 或者 HAP 不是用 AGC 下发的证书签名的(自签调试证书拿到的 token 发不出去)。
+      let receipt = null;
+      try {
+        receipt = JSON.parse(text);
+      } catch {
+        receipt = null;
+      }
+      const code = typeof receipt?.code === 'string' ? receipt.code : '';
+      if (code.length > 0 && code !== '80000000') {
+        this.log('warn', `the push gateway rejected the message: code=${code} msg=${receipt?.msg ?? ''} `
+          + '(check the AGC app: Push Kit enabled and the HAP signed with the AGC certificate)');
+        return false;
+      }
       this.log('info', `push sent to ${tokens.length} phone(s): ${title}`);
       return true;
     } catch (error) {
