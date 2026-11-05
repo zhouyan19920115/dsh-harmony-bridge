@@ -6,6 +6,9 @@
 // Errors always use the PROTOCOL.md envelope, and the server never dies because of a bad request.
 
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
 
 import { API_PREFIX, ClientFrame, ErrorCode, ServerFrame, errorEnvelope, serverFrame } from './protocol.js';
 import { WS_PATH } from './protocol.js';
@@ -27,6 +30,67 @@ import {
 } from './seal.js';
 
 const MAX_BODY_BYTES = 4 * 1024 * 1024;
+
+/** 手机上/上传的附件(图片、文件、录音)最大 32 MB —— 局域网直传够用, 也不至于把内存吃光。 */
+const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+/** 附件落到哪个目录(跟着 bridge.json 走, 默认 ~/.dsh-harmony-bridge/uploads/)。 */
+const UPLOAD_PATH = `${API_PREFIX}/upload`;
+
+/**
+ * 接一个手机发来的附件: 原始字节直传(不是 base64), 边收边写盘, 不占内存。
+ *
+ * 请求头:
+ *   x-file-name  文件名(URI 编码)
+ *   x-file-type  MIME 类型(可选)
+ * 返回: { ok, path, name, size, mime } —— path 是电脑上的绝对路径, 手机把它 `@` 进 prompt 里即可。
+ */
+function handleUpload(bridge, request) {
+  const rawName = String(request.headers['x-file-name'] ?? 'file.bin');
+  let name = 'file.bin';
+  try {
+    name = decodeURIComponent(rawName);
+  } catch {
+    name = rawName;
+  }
+  const mime = String(request.headers['x-file-type'] ?? 'application/octet-stream');
+  const stateFile = String(bridge.state?.file ?? path.join(process.cwd(), 'bridge.json'));
+  const day = new Date().toISOString().slice(0, 10);
+  const dir = path.join(path.dirname(stateFile), 'uploads', day);
+  fs.mkdirSync(dir, { recursive: true });
+  const safe = name.replace(/[\\/:*?"<>|\u0000-\u001f]/gu, '_').slice(0, 80) || 'file.bin';
+  const target = path.join(dir, `${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safe}`);
+
+  return new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(target);
+    let size = 0;
+    let failed = false;
+    request.on('data', (chunk) => {
+      if (failed) {
+        return;
+      }
+      size += chunk.length;
+      if (size > MAX_UPLOAD_BYTES) {
+        failed = true;
+        out.destroy();
+        request.destroy();
+        reject(new BridgeError(413, ErrorCode.BAD_REQUEST, 'the file is larger than 32 MB'));
+        return;
+      }
+      out.write(chunk);
+    });
+    request.on('end', () => {
+      if (failed) {
+        return;
+      }
+      out.end(() => resolve({ path: target, name: safe, size, mime }));
+    });
+    request.on('error', (error) => {
+      failed = true;
+      out.destroy();
+      reject(error);
+    });
+  });
+}
 
 /**
  * The heartbeat of a phone connection.
@@ -354,6 +418,22 @@ export function createBridgeServer({ bridge, router, heartbeatIntervalMs = HEART
         // the first only exposes harmless information, the second needs the pairing code.
       }
 
+
+      // 附件上传: 原始字节直传, 比 base64 省 1/3 带宽, 也不占内存。
+      if (url.pathname === UPLOAD_PATH) {
+        if (sealed) {
+          sendJson(response, 501, errorEnvelope(ErrorCode.BAD_REQUEST,
+            'uploads are only supported on the LAN for now (switch the phone back to the local network)'));
+          return;
+        }
+        if (request.method !== 'POST') {
+          sendJson(response, 405, errorEnvelope(ErrorCode.BAD_REQUEST, 'use POST for uploads'));
+          return;
+        }
+        const uploaded = await handleUpload(bridge, request);
+        sendJson(response, 200, { ok: true, ...uploaded });
+        return;
+      }
 
       const match = router.match(request.method ?? 'GET', url.pathname);
       if (match === null) {
