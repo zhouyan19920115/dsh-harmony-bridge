@@ -1,84 +1,88 @@
 {
-  "format": 1,
-  "plugins": [
-    {
-      "repository": {
-        "url": "https://github.com/zhouyan19920115/dsh-harmony-bridge"
-      },
-      "metadata": {
-        "labels": [
-          "mobile",
-          "web"
-        ],
-        "category": "integration",
-        "keywords": [
-          "dsh-plugin",
-          "deepseek-harness",
-          "harmonyos",
-          "bridge",
-          "remote-control"
-        ],
-        "sortKeys": {}
-      },
-      "versions": [
-        {
-          "version": "0.1.8",
-          "source": {
-            "url": "https://github.com/zhouyan19920115/dsh-harmony-bridge.git",
-            "type": "git",
-            "commit": "09dce2d0b7cbc198fd63eefcde40a796dabebac3"
-          },
-          "publishTimestamp": 1793895450,
-          "engines": {
-            "dsh": ">=0.2.1-rc.1 <0.4.0-0"
-          }
-        }
-      ],
-      "homepage": "https://github.com/zhouyan19920115/dsh-harmony-bridge#readme",
-      "title": {
-        "zh": "DSH Harmony 手机桥接",
-        "en": "DSH Harmony phone bridge"
-      },
-      "icon": "icons/dsh-harmony-bridge-128.png",
-      "name": "dsh-harmony-bridge",
-      "author": "zhouyan19920115",
-      "description": {
-        "zh": "把手机桥接装进 DeepSeek Harness：局域网自动发现 + 带令牌的 HTTP/WebSocket + 队列/提问 + 可选云中继；手机装 DSHsync 后点「自动探测」即可连上。",
-        "en": "Run the phone bridge inside DeepSeek Harness: LAN auto-discovery, authenticated HTTP/WebSocket, queue and ask-user questions, optional cloud relay."
-      }
-    }
-  ],
-  "metadata": {
-    "categories": {
-      "integration": {
-        "title": {
-          "zh": "集成",
-          "en": "Integrations"
-        }
-      }
-    },
-    "labels": {
-      "mobile": {
-        "title": {
-          "zh": "手机",
-          "en": "Mobile"
-        }
-      },
-      "web": {
-        "title": {
-          "zh": "Web 界面",
-          "en": "Web UI"
-        }
-      }
-    },
-    "sortKeys": {}
-  },
-  "title": {
-    "zh": "DSH Harmony 手机桥接",
-    "en": "DSH Harmony"
-  },
-  "description": {
-    "zh": "DSH Harmony（鸿蒙手机端）作者发布的 DSH 插件。",
-    "en": "Plugins published by zhouyan19920115 for DSH Harmony (HarmonyOS phone client)."
-  }
+    "format":  1,
+    "plugins":  [
+                    {
+                        "repository":  {
+                                           "url":  "https://github.com/zhouyan19920115/dsh-harmony-bridge"
+                                       },
+                        "metadata":  {
+                                         "labels":  [
+                                                        "mobile",
+                                                        "web"
+                                                    ],
+                                         "category":  "integration",
+                                         "keywords":  [
+                                                          "dsh-plugin",
+                                                          "deepseek-harness",
+                                                          "harmonyos",
+                                                          "bridge",
+                                                          "remote-control"
+                                                      ],
+                                         "sortKeys":  {
+
+                                                      }
+                                     },
+                        "versions":  [
+                                         {
+                                             "version":  "0.2.0",
+                                             "source":  {
+                                                            "url":  "https://github.com/zhouyan19920115/dsh-harmony-bridge.git",
+                                                            "type":  "git",
+                                                            "commit":  "d6f4a413e338b603b3c9e480aa7bbf82f96409df"
+                                                        },
+                                             "publishTimestamp":  1793926584,
+                                             "engines":  {
+                                                             "dsh":  "\u003e=0.2.1-rc.1 \u003c0.4.0-0"
+                                                         }
+                                         }
+                                     ],
+                        "homepage":  "https://github.com/zhouyan19920115/dsh-harmony-bridge#readme",
+                        "title":  {
+                                      "zh":  "DSH Harmony 手机桥接",
+                                      "en":  "DSH Harmony phone bridge"
+                                  },
+                        "icon":  "icons/dsh-harmony-bridge-128.png",
+                        "name":  "dsh-harmony-bridge",
+                        "author":  "zhouyan19920115",
+                        "description":  {
+                                            "zh":  "把手机桥接装进 DeepSeek Harness：局域网自动发现 + 带令牌的 HTTP/WebSocket + 队列/提问 + 可选云中继；手机装 DSHsync 后点「自动探测」即可连上。",
+                                            "en":  "Run the phone bridge inside DeepSeek Harness: LAN auto-discovery, authenticated HTTP/WebSocket, queue and ask-user questions, optional cloud relay."
+                                        }
+                    }
+                ],
+    "metadata":  {
+                     "categories":  {
+                                        "integration":  {
+                                                            "title":  {
+                                                                          "zh":  "集成",
+                                                                          "en":  "Integrations"
+                                                                      }
+                                                        }
+                                    },
+                     "labels":  {
+                                    "mobile":  {
+                                                   "title":  {
+                                                                 "zh":  "手机",
+                                                                 "en":  "Mobile"
+                                                             }
+                                               },
+                                    "web":  {
+                                                "title":  {
+                                                              "zh":  "Web 界面",
+                                                              "en":  "Web UI"
+                                                          }
+                                            }
+                                },
+                     "sortKeys":  {
+
+                                  }
+                 },
+    "title":  {
+                  "zh":  "DSH Harmony 手机桥接",
+                  "en":  "DSH Harmony"
+              },
+    "description":  {
+                        "zh":  "DSH Harmony（鸿蒙手机端）作者发布的 DSH 插件。",
+                        "en":  "Plugins published by zhouyan19920115 for DSH Harmony (HarmonyOS phone client)."
+                    }
 }
