@@ -208,3 +208,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\sync-plugin-bridge.ps1
 ## License
 
 MIT，见仓库根目录 `LICENSE`。
+
+## 从 DSH 插件市场安装(推荐)
+
+在 DSH 里打开 **插件 → 市场 / 发现 → 添加市场索引**, 粘贴:
+
+```nhttps://raw.githubusercontent.com/zhouyan19920115/dsh-harmony-bridge/main/index.json
+```
+
+然后在「发现」里搜 **DSH Harmony 手机桥接** → 安装 → 启用 → 重启一次 DSH。
+桥接会随 DSH 自动启动, 手机装 DSHsync 后点「自动探测」即可。
