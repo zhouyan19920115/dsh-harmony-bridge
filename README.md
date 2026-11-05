@@ -218,3 +218,22 @@ MIT，见仓库根目录 `LICENSE`。
 
 然后在「发现」里搜 **DSH Harmony 手机桥接** → 安装 → 启用 → 重启一次 DSH。
 桥接会随 DSH 自动启动, 手机装 DSHsync 后点「自动探测」即可。
+
+## 发版(维护者)
+
+一条命令升版本、打 tag、推送、同步市场 `index.json`：
+
+```powershell
+# 默认 patch +1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\release.ps1 -Bump patch
+
+# 指定版本
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\release.ps1 -Version 0.2.0
+
+# 先看会做什么(不改文件)
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\release.ps1 -Bump patch -DryRun
+```
+
+脚本会：改 `package.json` → 提交 + `git tag vX.Y.Z` + 推送 → 把 `index.json` 的
+`version`/`publishTimestamp`/`source.commit` 更新成新提交并再推一次。
+加 `-Token <github_token> -Release` 还会顺手创建 GitHub Release。
