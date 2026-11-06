@@ -30,7 +30,7 @@
                                                             "type":  "git",
                                                             "commit":  "b64641607482bf3b3fd1a9313c265a2886abc3ac"
                                                         },
-                                             "publishTimestamp":  ,
+                                             "publishTimestamp":  1794006666,
                                              "engines":  {
                                                              "dsh":  "\u003e=0.2.1-rc.1 \u003c0.4.0-0"
                                                          }
