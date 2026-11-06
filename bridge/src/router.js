@@ -978,6 +978,21 @@ export class Bridge {
         if (sessionId.length > 0) questionList.push({ sessionId, title: this.titleOf(sessionId) });
       }
     }
+    // 投影里的 active 在真实机器上一直是空的(实测), 所以运行中的会话再补一轮:
+    // 从会话记录里找还没回答的 ask_user_question。运行中的会话一般就一两个, 负担可控。
+    for (const sessionId of running) {
+      if (questionList.some((item) => item.sessionId === sessionId)) continue;
+      let calls = [];
+      try {
+        calls = await this.pendingAskCalls(sessionId);
+      } catch {
+        calls = [];
+      }
+      if (calls.length > 0) {
+        questions += calls.length;
+        questionList.push({ sessionId, title: this.titleOf(sessionId) });
+      }
+    }
     this.pending = {
       count: running.size + queued + questions,
       running,
@@ -1190,10 +1205,87 @@ export class Bridge {
    * returns them verbatim so the phone can draw the options and answer with a normal prompt.
    */
   async sessionQuestions(id) {
-    const projections = await this.sessionProjections(id);
-    const values = projections?.values ?? {};
-    const active = values.userQuestions?.active;
-    return { questions: Array.isArray(active) ? active : [] };
+    // 桌面端的互动弹窗不是「投影里的 active 列表」——它是模型调用了
+    // ask_user_question 工具, 那个 tool/call 记录会一直挂在会话历史里, 直到
+    // 用户回答后出现对应的 tool/result。投影(userQuestions.active)在真实机器上
+    // 实测一直是空的, 所以这里直接从会话记录里翻:
+    //   - 名字是 ask_user_question / request_user_input 的 tool/call
+    //   - 还没有同名 toolCallId 的 tool/result
+    const calls = await this.pendingAskCalls(id);
+    return { questions: calls };
+  }
+
+  /**
+   * 会话里「问完还没人回答」的 ask 调用。
+   *
+   * 每条都是一次 ask_user_question 工具调用; `questions` 是手机端渲染用的
+   * [{id, question, header?, options?, multiSelect?}]。
+   */
+  async pendingAskCalls(sessionId) {
+    let page = null;
+    try {
+      page = await this.dsh.pageMessages(sessionId, { maxMessages: 200 });
+    } catch (error) {
+      this.log('warn', `the ask history of ${sessionId} could not be read: ${error instanceof Error ? error.message : String(error)}`);
+      return [];
+    }
+    const records = Array.isArray(page?.records) ? page.records : [];
+    const events = [];
+    for (const record of records) {
+      if (record?.type === 'event' && record.event !== undefined) events.push(record.event);
+      else if (record?.type === 'tool/call' || record?.type === 'tool/result') events.push(record);
+    }
+    // Result records reach the bridge in two shapes: the raw DSH event carries
+    // `data.toolCallId`, while the normalized page records carry
+    // `data.message.toolCallId` (plus the callId inside `data.message.source`).
+    // The JSON fallback catches any future shape that still names the call.
+    const settled = new Set();
+    const addCallId = (value) => {
+      if (typeof value === 'string' && value.length > 0) settled.add(value);
+    };
+    for (const event of events) {
+      if (event?.type !== 'tool/result') continue;
+      const data = event?.data ?? {};
+      addCallId(data.toolCallId);
+      addCallId(data.callId);
+      addCallId(data.message?.toolCallId);
+      addCallId(data.message?.source?.callId);
+      const text = JSON.stringify(data);
+      for (const match of text.matchAll(/call_[A-Za-z0-9_]+/gu)) addCallId(match[0]);
+    }
+    const calls = [];
+    for (const event of events) {
+      if (event?.type !== 'tool/call') continue;
+      const name = event?.data?.name;
+      if (name !== 'ask_user_question' && name !== 'request_user_input') continue;
+      const callId = event?.data?.callId;
+      if (typeof callId !== 'string' || callId.length === 0 || settled.has(callId)) continue;
+      let args = event?.data?.arguments;
+      if (typeof args === 'string') {
+        try { args = JSON.parse(args); } catch { args = null; }
+      }
+      const raw = Array.isArray(args?.questions) ? args.questions : [];
+      const questions = [];
+      for (const item of raw) {
+        if (item === null || typeof item !== 'object') continue;
+        if (typeof item.id !== 'string' || item.id.length === 0) continue;
+        if (typeof item.question !== 'string' || item.question.length === 0) continue;
+        const options = Array.isArray(item.options)
+          ? item.options.filter((o) => o !== null && typeof o === 'object' && typeof o.label === 'string')
+            .map((o) => ({ label: o.label, ...(typeof o.description === 'string' ? { description: o.description } : {}) }))
+          : undefined;
+        questions.push({
+          id: item.id,
+          question: item.question,
+          ...(typeof item.header === 'string' && item.header.length > 0 ? { header: item.header } : {}),
+          ...(typeof item.detail === 'string' && item.detail.length > 0 ? { detail: item.detail } : {}),
+          ...(options !== undefined && options.length > 0 ? { options } : {}),
+          ...(item.multiSelect === true ? { multiSelect: true } : {}),
+        });
+      }
+      if (questions.length > 0) calls.push({ callId, questions });
+    }
+    return calls;
   }
 
   /**
