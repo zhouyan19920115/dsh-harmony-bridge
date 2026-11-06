@@ -24,13 +24,13 @@
                                      },
                         "versions":  [
                                          {
-                                             "version":  "0.2.1",
+                                             "version":  "0.3.0",
                                              "source":  {
                                                             "url":  "https://github.com/zhouyan19920115/dsh-harmony-bridge.git",
                                                             "type":  "git",
-                                                            "commit":  "d9081833a8dc756f9c654a76d9eaa8c7e86bdf38"
+                                                            "commit":  "b64641607482bf3b3fd1a9313c265a2886abc3ac"
                                                         },
-                                             "publishTimestamp":  1793951279,
+                                             "publishTimestamp":  ,
                                              "engines":  {
                                                              "dsh":  "\u003e=0.2.1-rc.1 \u003c0.4.0-0"
                                                          }
@@ -38,14 +38,14 @@
                                      ],
                         "homepage":  "https://github.com/zhouyan19920115/dsh-harmony-bridge#readme",
                         "title":  {
-                                      "zh":  "DSH Harmony 手机桥接",
+                                      "zh":  "DSH Harmony 鎵嬫満妗ユ帴",
                                       "en":  "DSH Harmony phone bridge"
                                   },
                         "icon":  "icons/dsh-harmony-bridge-128.png",
                         "name":  "dsh-harmony-bridge",
                         "author":  "zhouyan19920115",
                         "description":  {
-                                            "zh":  "把手机桥接装进 DeepSeek Harness：局域网自动发现 + 带令牌的 HTTP/WebSocket + 队列/提问 + 可选云中继；手机装 DSHsync 后点「自动探测」即可连上。",
+                                            "zh":  "鎶婃墜鏈烘ˉ鎺ヨ杩?DeepSeek Harness锛氬眬鍩熺綉鑷姩鍙戠幇 + 甯︿护鐗岀殑 HTTP/WebSocket + 闃熷垪/鎻愰棶 + 鍙€変簯涓户锛涙墜鏈鸿 DSHsync 鍚庣偣銆岃嚜鍔ㄦ帰娴嬨€嶅嵆鍙繛涓娿€?,
                                             "en":  "Run the phone bridge inside DeepSeek Harness: LAN auto-discovery, authenticated HTTP/WebSocket, queue and ask-user questions, optional cloud relay."
                                         }
                     }
@@ -54,7 +54,7 @@
                      "categories":  {
                                         "integration":  {
                                                             "title":  {
-                                                                          "zh":  "集成",
+                                                                          "zh":  "闆嗘垚",
                                                                           "en":  "Integrations"
                                                                       }
                                                         }
@@ -62,13 +62,13 @@
                      "labels":  {
                                     "mobile":  {
                                                    "title":  {
-                                                                 "zh":  "手机",
+                                                                 "zh":  "鎵嬫満",
                                                                  "en":  "Mobile"
                                                              }
                                                },
                                     "web":  {
                                                 "title":  {
-                                                              "zh":  "Web 界面",
+                                                              "zh":  "Web 鐣岄潰",
                                                               "en":  "Web UI"
                                                           }
                                             }
@@ -78,11 +78,11 @@
                                   }
                  },
     "title":  {
-                  "zh":  "DSH Harmony 手机桥接",
+                  "zh":  "DSH Harmony 鎵嬫満妗ユ帴",
                   "en":  "DSH Harmony"
               },
     "description":  {
-                        "zh":  "DSH Harmony（鸿蒙手机端）作者发布的 DSH 插件。",
+                        "zh":  "DSH Harmony锛堥缚钂欐墜鏈虹锛変綔鑰呭彂甯冪殑 DSH 鎻掍欢銆?,
                         "en":  "Plugins published by zhouyan19920115 for DSH Harmony (HarmonyOS phone client)."
                     }
 }
