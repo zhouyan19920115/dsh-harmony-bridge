@@ -1,6 +1,6 @@
 {
   "name": "dsh-harmony-bridge",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "让手机 App 通过 DSH 插件连上本机桥接：局域网自动发现 + 带令牌的 HTTP/WebSocket + 可选云中继，手机不用再往电脑传文件。",
   "type": "module",
   "main": "lib/index.js",

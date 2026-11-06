@@ -833,12 +833,14 @@ export class DshClient {
    * projection; `answers` is [{ id, selected: string[], custom?: string }].
    */
   async answerQuestions(sessionId, callId, answers) {
-    await this.rpc('userQuestions/answer', {
+    // DSH 返回 boolean: true = 这条提问真的被接住并关闭了, false = 没人接
+    // (前台等待中的提问只有当前前台客户端能答, 别的客户端 call 会静默 false)。
+    const value = await this.rpc('userQuestions/answer', {
       agentId: sessionId,
       callId,
       answer: { answers },
     });
-    return { ok: true };
+    return value === true;
   }
 
   /** The slash commands of the desktop application. */

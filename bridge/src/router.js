@@ -175,6 +175,8 @@ export class Bridge {
     });
     this.clients = new Set();
     this.streams = new Map();
+    /** 桥接自己的提问(手机可答): id -> { sessionId, questions, resolve, reject, timer } */
+    this.bridgeAsks = new Map();
     this.tailers = new Map();
     /**
      * 登记过的手机: 设备号 → 设备令牌。
@@ -980,6 +982,12 @@ export class Bridge {
     }
     // 投影里的 active 在真实机器上一直是空的(实测), 所以运行中的会话再补一轮:
     // 从会话记录里找还没回答的 ask_user_question。运行中的会话一般就一两个, 负担可控。
+    // 桥接自己的提问(手机可答)也要计入待办, 不然列表页不发通知。
+    for (const ask of this.bridgeAsks.values()) {
+      if (questionList.some((item) => item.sessionId === ask.sessionId)) continue;
+      questions += 1;
+      questionList.push({ sessionId: ask.sessionId, title: this.titleOf(ask.sessionId) });
+    }
     for (const sessionId of running) {
       if (questionList.some((item) => item.sessionId === sessionId)) continue;
       let calls = [];
@@ -1212,6 +1220,12 @@ export class Bridge {
     //   - 名字是 ask_user_question / request_user_input 的 tool/call
     //   - 还没有同名 toolCallId 的 tool/result
     const calls = await this.pendingAskCalls(id);
+    // 桥接自己的提问排在前面: 这些是手机真的能答的(DSH 前台提问只能桌面端答)。
+    for (const ask of this.bridgeAsks.values()) {
+      if (ask.sessionId === id) {
+        calls.unshift({ callId: ask.id, questions: ask.questions, answerable: true });
+      }
+    }
     return { questions: calls };
   }
 
@@ -1283,7 +1297,9 @@ export class Bridge {
           ...(item.multiSelect === true ? { multiSelect: true } : {}),
         });
       }
-      if (questions.length > 0) calls.push({ callId, questions });
+      // 这类「前台正在等」的提问在 DSH 里只有当前前台客户端能作答, 远端只能看;
+      // 把话说清楚, 手机端好按这个字段决定要不要给「提交」。
+      if (questions.length > 0) calls.push({ callId, questions, answerable: false });
     }
     return calls;
   }
@@ -1308,8 +1324,51 @@ export class Bridge {
         throw new BridgeError(400, ErrorCode.BAD_REQUEST, 'selected must be an array of option labels');
       }
     }
-    await this.dshCall(() => this.dsh.answerQuestions(id, callId, answers));
+    const bridged = this.bridgeAsks.get(callId);
+    if (bridged !== undefined) {
+      this.bridgeAsks.delete(callId);
+      if (bridged.timer !== null) clearTimeout(bridged.timer);
+      bridged.resolve(answers);
+      return { ok: true };
+    }
+    const settled = await this.dshCall(() => this.dsh.answerQuestions(id, callId, answers));
+    if (!settled) {
+      // 这条提问正被桌面端前台接着(session 里那条 tool/call 还在等), DSH 只允许
+      // 当前前台客户端作答, 远端 client 调用会返回 false —— 别假装成功。
+      throw new BridgeError(409, 'QUESTION_DESKTOP_ONLY',
+        '这条问题正在桌面端前台等待回答，只能在电脑上作答；手机端可以查看和收到提醒。');
+    }
     return { ok: true };
+  }
+
+  /**
+   * 手机可以回答的提问(桥接自己发)。
+   *
+   * DSH 自带的 ask_user_question 是「前台等待」, 只有桌面端当前客户端能答, 手机/桥接
+   * 去答 DSH 返回 false。所以需要手机作答的场景走这条通道: 桥接 hold 住这个 HTTP
+   * 请求, 手机在卡片上回答后 resolve, 请求返回答案。
+   *
+   * @param {string} sessionId 会话(手机端按会话展示卡片)
+   * @param {object[]} questions [{id, question, header?, options?, multiSelect?}]
+   * @param {number} timeoutMs 超时(默认 10 分钟)
+   */
+  async askUser(sessionId, questions, timeoutMs = 10 * 60 * 1000) {
+    if (typeof sessionId !== 'string' || sessionId.length === 0) {
+      throw new BridgeError(400, ErrorCode.BAD_REQUEST, 'sessionId is required');
+    }
+    if (!Array.isArray(questions) || questions.length === 0) {
+      throw new BridgeError(400, ErrorCode.BAD_REQUEST, 'questions must be a non-empty array');
+    }
+    const id = `bridge-ask-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+    return await new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.bridgeAsks.delete(id);
+        reject(new BridgeError(504, 'ASK_TIMEOUT', 'the phone did not answer in time'));
+      }, Math.min(Math.max(Number(timeoutMs) || 0, 1000), 30 * 60 * 1000));
+      timer.unref?.();
+      this.bridgeAsks.set(id, { id, sessionId, questions, resolve, reject, timer });
+      this.log('info', `bridge ask ${id} waiting for the phone (${sessionId})`);
+    });
   }
 
   /**
@@ -2348,6 +2407,16 @@ export function createRoutes(bridge) {
   ];
 
   const routes = [
+    {
+      // 桥接自己发起的提问: 手机可以回答, 请求会一直等到答案或超时。
+      method: 'POST',
+      pattern: `${API_PREFIX}/ask`,
+      handler: async (request) => {
+        const body = request.body ?? {};
+        const answers = await bridge.askUser(body.sessionId ?? '', body.questions, body.timeoutMs);
+        return { body: { ok: true, answers } };
+      },
+    },
     {
       method: 'GET',
       pattern: `${API_PREFIX}/health`,
